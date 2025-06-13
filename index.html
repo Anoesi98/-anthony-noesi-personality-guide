@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anthony Noesi's Interactive Personality Guide</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #00aaff;
+            --secondary-color: #00ffc3;
+            --background-color: #0d1117;
+            --glass-bg: rgba(22, 27, 34, 0.6);
+            --text-color: #c9d1d9;
+            --header-color: #ffffff;
+            --low-score: #e67e22;
+            --medium-score: #2ecc71;
+            --high-score: #3498db;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+        
+        /* --- Global Custom Scrollbar Styles --- */
+        html {
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-color) transparent;
+        }
+        html::-webkit-scrollbar {
+            width: 10px;
+        }
+        html::-webkit-scrollbar-track {
+            background: var(--background-color);
+        }
+        html::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 10px;
+            border: 2px solid var(--background-color);
+        }
+        html::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            box-shadow: 0 0 15px var(--secondary-color);
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.7;
+            overflow-x: hidden;
+            margin: 0;
+        }
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+        }
+        .page {
+            flex-grow: 1;
+            display: none; 
+        }
+        .page.active {
+            display: block; 
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .main-nav {
+            padding: 1rem 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .main-nav-right button {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 1.1rem;
+            font-family: 'Poppins', sans-serif;
+            margin: 0 0 0 1.5rem;
+            cursor: pointer;
+            transition: color 0.3s;
+            padding: 0.5rem 0;
+            border-bottom: 2px solid transparent;
+        }
+        .main-nav-right button:hover, .main-nav-right button.active {
+            color: var(--secondary-color);
+            border-bottom-color: var(--secondary-color);
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-btn {
+            background: var(--glass-bg);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--secondary-color);
+            padding: 0.75rem 1.5rem;
+            font-size: 1.1rem;
+            font-family: 'Poppins', sans-serif;
+            cursor: pointer;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+        .dropdown-btn:hover {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            min-width: 280px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.3);
+            z-index: 100;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        .dropdown-content button {
+            color: var(--text-color);
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            text-align: left;
+            width: 100%;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+        }
+        .dropdown-content button:hover {
+            background-color: rgba(0, 170, 255, 0.2);
+        }
+        .show {
+            display: block;
+        }
+        
+        header { text-align: center; padding: 4rem 1rem 2rem 1rem; }
+        header h1 {
+            font-size: 3.5rem;
+            color: var(--header-color);
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        header p { font-size: 1.25rem; }
+        .sub-headline {
+            font-size: 1rem;
+            color: var(--text-color);
+            opacity: 0.8;
+            margin-top: 0.5rem;
+        }
+
+        .section { padding: 2rem 0; text-align: center; }
+        .section h2 { font-size: 2.5rem; margin-bottom: 2rem; color: var(--header-color); }
+        .subtitle { max-width: 800px; margin: -1.5rem auto 2.5rem auto; font-weight: 300; }
+        
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        #overall .glass-card {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+        .score-dial { width: 150px; height: 150px; position: relative; }
+        .score-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.2rem; font-weight: 700; color: var(--header-color); }
+        .overall-text { text-align: left; max-width: 600px; }
+        .overall-text h3 { color: var(--header-color); font-size: 1.8rem; margin-bottom: 1rem;}
+        .overall-text p { font-size: 1.05rem; margin-bottom: 1rem; }
+        .overall-text p:last-child { margin-bottom: 0; }
+
+        .radar-card { max-width: 600px; margin: 0 auto; }
+
+        .personality-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+        .trait-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 15px; padding: 1.5rem; text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1); border-left: 5px solid;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+        .trait-card:hover {
+            transform: translateY(-10px) scale(1.03);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 15px var(--glow-color);
+        }
+        .trait-card .icon { font-size: 3rem; }
+        .trait-card h4 { font-size: 1.4rem; margin: 0.5rem 0; color: var(--header-color); }
+        .score-badge { display: inline-block; padding: 0.3rem 0.8rem; border-radius: 20px; font-weight: 600; font-size: 0.9rem; margin-bottom: 1rem; color: #fff; }
+        .trait-card.high { --glow-color: var(--high-score); border-left-color: var(--high-score); }
+        .trait-card.medium { --glow-color: var(--medium-score); border-left-color: var(--medium-score); }
+        .trait-card.low { --glow-color: var(--low-score); border-left-color: var(--low-score); }
+        .trait-card.high .score-badge { background-color: var(--high-score); }
+        .trait-card.medium .score-badge { background-color: var(--medium-score); }
+        .trait-card.low .score-badge { background-color: var(--low-score); }
+
+        /* Detail & Growth Page Styles */
+        .detail-header { padding-top: 2rem; text-align: center; }
+        .detail-icon { font-size: 4rem; }
+        .detail-header h1 { margin: 0.5rem 0; font-size: 3rem; color: var(--header-color); }
+        .large-badge { font-size: 1.2rem; padding: 0.5rem 1.5rem; }
+        .text-card { text-align: left; max-width: 800px; margin: 0 auto; padding: 2rem 3rem; }
+        .text-card p { font-size: 1.1rem; }
+        .leverage-card ul, .growth-results-list { list-style: none; padding: 0; }
+        .leverage-card li, .growth-results-list li { font-size: 1.1rem; margin-bottom: 1rem; display: flex; align-items: flex-start; }
+        .li-icon { color: var(--secondary-color); margin-right: 1rem; font-size: 1.5rem; line-height: 1.1rem; }
+        
+        .spectrum-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1.5rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .spectrum-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid;
+        }
+        .spectrum-card.high h3 { border-color: var(--high-score); color: var(--high-score);}
+        .spectrum-card.medium h3 { border-color: var(--medium-score); color: var(--medium-score);}
+        .spectrum-card.low h3 { border-color: var(--low-score); color: var(--low-score);}
+        .spectrum-card p { font-size: 1rem; font-weight: 300; }
+
+        @media (max-width: 900px) {
+            .spectrum-container { grid-template-columns: 1fr; }
+        }
+
+        .page-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 3rem;
+            padding: 1rem 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .nav-button {
+            background: none;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+        }
+        .nav-button:hover {
+            background-color: var(--primary-color);
+            color: #fff;
+            box-shadow: 0 0 15px var(--primary-color);
+        }
+        
+        /* Growth Page Specific Styles */
+        .growth-exercise-card {
+            max-width: 800px; margin: 0 auto; text-align: left;
+            display: flex; flex-direction: column; gap: 1.5rem;
+        }
+        .growth-exercise-card label {
+            font-weight: 600;
+            color: var(--header-color);
+        }
+        .growth-exercise-card select, .growth-exercise-card textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+        }
+        #generate-growth-plan-btn { align-self: center; margin-top: 1rem; }
+        #growth-results.loading p {
+            font-style: italic;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* Audio Control Button Styles */
+        .floating-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background-color: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        .floating-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px var(--secondary-color);
+        }
+        .floating-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--secondary-color);
+        }
+
+        footer { text-align: center; padding: 2rem; border-top: 1px solid rgba(255, 255, 255, 0.1); font-size: 0.9rem; margin-top: auto; }
+    </style>
+</head>
+<body>
+    <div id="particles-js"></div>
+    <div class="app-container">
+        
+        <nav class="main-nav">
+            <div class="dropdown">
+                <button id="nav-dropdown-btn" class="dropdown-btn">Explore Traits ☰</button>
+                <div id="nav-dropdown-content" class="dropdown-content">
+                    <!-- Links will be populated by JS -->
+                </div>
+            </div>
+            <div class="main-nav-right">
+                <button id="nav-home" onclick="navigateTo('home')">My Dashboard</button>
+                <button id="nav-growth" onclick="navigateTo('growth')">My Growth Plan AI 🚀</button>
+            </div>
+        </nav>
+
+        <!-- PAGE 1: Home -->
+        <div id="home-page" class="page active">
+            <header>
+                <h1>The Anthony Noesi Experience</h1>
+                <p>An interactive dive into your unique personality matrix.</p>
+                <p class="sub-headline">A breakdown of the 16PF Personality Test | Completed: June 12, 2025</p>
+            </header>
+    
+            <section class="section" id="overall">
+                <h2>Your Overall Profile</h2>
+                <div class="glass-card">
+                    <div class="score-dial">
+                        <canvas id="overallScoreChart"></canvas>
+                        <div class="score-text">6.27</div>
+                    </div>
+                    <div class="overall-text">
+                        <h3>A Well-Balanced & Adaptable Profile 🧭</h3>
+                        <p>Your overall score points to a well-balanced and highly adaptable personality, revealing a state of impressive inner harmony. Think of it like being an all-terrain vehicle with an advanced toolkit, able to navigate any situation with skill and composure. This isn't an "average" score—it's a sign of a mature and well-integrated self that can confidently face the world.</p>
+                        <p>This balance highlights your strong social and emotional intelligence. You have a fantastic ability to read a room, understand others' perspectives, and respond in a way that is both authentic to you and effective for the situation. You know when to be assertive and when to be empathetic, making you a reliable friend and a diplomatic colleague.</p>
+                        <p>Ultimately, like a skilled conductor leading an orchestra, you bring all the different parts of your personality together to create a cohesive whole. This balance is your superpower, allowing you to build strong relationships, handle challenges with a steady hand, and stay on course through life's ups and downs.</p>
+                    </div>
+                </div>
+            </section>
+            
+            <section class="section" id="radar">
+                <h2>Personality At-a-Glance</h2>
+                <div class="glass-card radar-card">
+                    <canvas id="personalityRadarChart"></canvas>
+                </div>
+            </section>
+    
+            <section class="section" id="traits">
+                <h2>Your Traits Unlocked</h2>
+                <p class="subtitle">Click on any card to dive deeper and discover your personal superpowers!</p>
+                <div class="personality-grid" id="personality-grid-container">
+                    <!-- Trait cards will be generated by JavaScript here -->
+                </div>
+            </section>
+        </div>
+
+        <!-- PAGE 2: Detail Page (Template) -->
+        <div id="detail-page" class="page">
+             <!-- Detail content will be generated by JavaScript here -->
+        </div>
+
+        <!-- PAGE 3: Growth Plan Page -->
+        <div id="growth-page" class="page">
+            <header class="detail-header">
+                <span class="detail-icon">🚀</span>
+                <h1>Your Personal Growth Plan</h1>
+            </header>
+            <section class="section">
+                <h2>Interactive Growth Exercise</h2>
+                <p class="subtitle">Select a trait, describe a challenge, and let's build a strategy together.</p>
+        
+                <div class="glass-card growth-exercise-card">
+                    <label for="trait-selector">1. Choose a trait to focus on:</label>
+                    <select id="trait-selector">
+                        <!-- Options will be populated by JavaScript -->
+                    </select>
+        
+                    <label for="challenge-input">2. Describe a current goal or challenge:</label>
+                    <textarea id="challenge-input" rows="4" placeholder="e.g., 'I want to be more confident when speaking in meetings' or 'How can I find more time for my creative hobbies?'"></textarea>
+        
+                    <button id="generate-growth-plan-btn" class="nav-button">Generate My Ideas</button>
+                </div>
+            </section>
+        
+            <section class="section">
+                <h2>Your Personalized Ideas</h2>
+                <div id="growth-results" class="glass-card text-card">
+                    <p>Your AI-powered growth plan will appear here...</p>
+                </div>
+            </section>
+        </div>
+
+        <div id="audio-control" class="floating-btn">
+            <svg id="play-icon" viewBox="0 0 24 24" style="display: block;"><path d="M8 5v14l11-7z"></path></svg>
+            <svg id="pause-icon" viewBox="0 0 24 24" style="display: none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+        </div>
+
+        <footer>
+            <p>Profile generated for Anthony Noesi on Thursday, June 12, 2025. | Franklin Square, New York</p>
+        </footer>
+    </div>
+
+    <script>
+        const personalityData = [
+            { id: 'assertiveness', trait: "Assertiveness & Empathy", score: 8.75, level: "HIGH", icon: "💪", summary: "Confident and self-assured, comfortable taking the lead.", details: "You're a natural-born leader, Anthony! You have strong convictions and you're not afraid to voice your opinion. Think of yourself as the captain of a ship—confident at the helm and clear about the direction you're heading. People likely see you as self-assured and decisive.", leverage: { title: "Harness Your Assertiveness", points: ["Take the lead on projects...","In negotiations, state your terms clearly...","Use your empathy to mentor others...","Set clear boundaries..."]}, scale: { low: "A tendency toward humility and docility. Often conformist, passive, and considerate to avoid conflict.", medium: "A healthy balance of self-assuredness and consideration for others. Can lead when necessary but also knows how to collaborate and compromise.", high: "A tendency toward a more dominant attitude, aggression, competitiveness, stubbornness, and self-confidence."}},
+            { id: 'sensitivity', trait: "Sensitivity", score: 5.25, level: "MEDIUM", icon: "🎭", summary: "Balances emotional awareness with practical, rational thinking.", details: "You've got the best of both worlds. You can feel the emotion in a powerful song or piece of art, but you won't get swept away by it. You have a 'Spidey-Sense' for what's going on around you, but you keep your feet firmly on the ground. This makes you both understanding and practical.", leverage: { title: "Utilize Your Balanced Sensitivity", points: ["In creative fields, connect with art on a deeper level...","When giving feedback, be both honest and kind...","Be a great friend by listening and offering solutions...","Notice small details others miss..."]}, scale: { low: "Low sensitivity toward others and the environment. Tends to be governed by rational thinking, and can be practical, skeptical, and realistic.", medium: "A 'best of both worlds' approach. You can appreciate emotion and nuance while still remaining grounded in logic and practicality.", high: "A high propensity to experience emotions intensely. Can be described as distracted, dreamy, intuitive, and temperamental."}},
+            { id: 'stability', trait: "Emotional Stability", score: 5.75, level: "MEDIUM", icon: "🧘", summary: "Generally calm, mature, and handles emotions well.", details: "You're like a sturdy oak tree. While small branches might sway in a storm, your trunk stays solid. You handle stress well and don't let minor bumps in the road throw you off course. People probably see you as a reliable and calm presence.", leverage: { title: "Build on Your Stability", points: ["Be the rock in a crisis...","Be a reliable and trustworthy partner...","Pursue long-term goals without being derailed...","Practice mindfulness..."]}, scale: { low: "A tendency to become frustrated quickly and avoid reality. May have difficulty controlling impulses.", medium: "Generally stable and able to manage emotions, but can still experience occasional frustration or instability under high stress.", high: "A realistic and emotionally stable personality. Mature, with a strong ability to control impulses and emotions."}},
+            { id: 'warmth', trait: "Affectivity (Warmth)", score: 7.25, level: "MEDIUM", icon: "🤗", summary: "Affectionate, expressive, and enjoys collaborating with others.", details: "You're like a human bonfire! You radiate warmth and people feel comfortable approaching you. You're generous with your affection and enjoy working with others, making you a great team player and a beloved friend.", leverage: { title: "Spread Your Warmth", points: ["Excel in team-based roles...","Network naturally...","Maintain strong personal relationships...","Consider roles in customer service or teaching..."]}, scale: { low: "Tends to be more reserved, formal, solitary, and skeptical. Prefers to work alone and values precision.", medium: "Friendly and approachable, but may reserve true openness for closer relationships. A good balance of sociability and privacy.", high: "A willingness to show affection. Tends to be loving, expressive, generous, cooperative, and active in groups."}},
+            { id: 'imagination', trait: "Imagination", score: 9.0, level: "HIGH", icon: "🎨", summary: "Vibrant imagination and a rich, creative inner world.", details: "Your mind is a movie theater playing epic films 24/7! You are incredibly creative and have a rich inner world. You're the person who comes up with a dozen new ideas before breakfast. This is your superpower for innovation and problem-solving.", leverage: { title: "Unleash Your Imagination", points: ["Brainstorm innovative solutions...","Engage in creative hobbies...","Forecast future trends...","Be the 'ideas person' on a team..."]}, scale: { low: "More oriented toward external, immediate reality. Practical and grounded.", medium: "Can appreciate creative ideas and new possibilities, but typically remains grounded in what is practical and realistic.", high: "Very open to imagination, developing fantasies and accessing a rich inner world."}},
+            { id: 'sincerity', trait: "Sincerity (Low Cunning)", score: 7.5, level: "HIGH", icon: "😇", summary: "Genuine, direct, and sincere in your interactions.", details: "What you see is what you get, Anthony. You're genuine and straightforward. You don't play games or wear masks. People trust you because they know you're authentic to the core.", leverage: { title: "Lead with Sincerity", points: ["Build deep, trusting relationships...","Earn respect and loyalty in leadership roles...","Your strength is in your honesty...","Choose a career where integrity is valued..."]}, scale: { low: "A profile of genuine, open, direct, and sincere people who do not strive to impress others. (Low in 'Cunning')", medium: "Generally forthright and sincere, but also socially aware enough to be diplomatic when necessary. (Medium 'Cunning')", high: "A tendency to be calculating, refined, diplomatic, and very socially aware. (High in 'Cunning')"}},
+            { id: 'rules', trait: "Rule-Consciousness", score: 4.25, level: "MEDIUM", icon: "🚦", summary: "Balances respect for rules with your own personal values.", details: "You see the rules, but you also see the 'why' behind them. You're not a rebel without a cause, but you're also not a robot. You know when to follow the path and when it's smart to take a well-reasoned shortcut.", leverage: { title: "Navigate with Your Inner Compass", points: ["Challenge inefficient processes...","Innovate within a system...","Trust your gut in ethical situations...","Explain your reasoning when you deviate..."]}, scale: { low: "A tendency to not behave according to rules and to adhere to a set of values that differ from the norm.", medium: "Understands and generally respects rules, but is willing to bend them if it makes practical sense or aligns with a higher value.", high: "A tendency toward moralism and responsibility, acting according to established rules."}},
+            { id: 'self_sufficiency', trait: "Self-Sufficiency", score: 7.0, level: "MEDIUM", icon: "👤", summary: "Independent and can make decisions on your own.", details: "You're an all-terrain vehicle. You can navigate the journey solo, confident in your own abilities, but you're also perfectly capable of joining a convoy and working with a team. You enjoy your independence but aren't isolated by it.", leverage: { title: "Embrace Your Independence", points: ["Take on projects that allow for autonomy...","Start a side project or business...","Practice both solo and group hobbies...","Complete tasks independently within a group..."]}, scale: { low: "A preference for being in groups and making decisions based on what others think and what society dictates.", medium: "Can work effectively alone or in a group. Values both personal independence and collaborative input.", high: "A self-sufficient individual who makes decisions without worrying about others' opinions and prefers to be alone."}},
+            { id: 'relaxation', trait: "Relaxation (Low Tension)", score: 6.25, level: "MEDIUM", icon: "🧘‍♀️", summary: "Generally leads a calm, relaxed, and patient existence.", details: "You have a 'low-simmer' setting. While others are boiling over with stress, you maintain a cool, patient vibe. This helps you think clearly under pressure and makes you a very calming person to be around.", leverage: { title: "Benefit From Your Calm Demeanor", points: ["Be an excellent teacher or mentor...","Perform well under long-term pressure...","Use your calm presence in negotiations...","Enjoy the moment..."]}, scale: { low: "A calm and relaxed existence, governed by patience and a high degree of satisfaction. (Low in 'Tension')", medium: "Generally relaxed but can experience periods of tension or impatience when faced with significant pressure or frustration. (Medium 'Tension')", high: "A tendency to experience constant subjective discomfort, impatience, and an inability to remain inactive. (High in 'Tension')"}},
+            { id: 'confidence', trait: "Confidence (Low Apprehension)", score: 4.25, level: "MEDIUM", icon: "😎", summary: "A balanced self-view, confident but also considerate.", details: "You have a quiet, solid self-belief. It's not loud or arrogant; it's a steady inner knowledge that you've 'got this.' This allows you to take on challenges without being crippled by worry or self-doubt.", leverage: { title: "Project Quiet Confidence", points: ["Great for public speaking...","Take calculated risks...","Be an approachable leader...","Give compliments freely..."]}, scale: { low: "A very positive view of oneself and self-confidence. Can sometimes be insensitive to others. (Low in 'Apprehension')", medium: "Generally self-confident but can still feel moments of worry or insecurity, especially with new challenges. (Medium 'Apprehension')", high: "A tendency toward very high personal expectations, excessive worry, feelings of guilt, and insecurity. (High in 'Apprehension')"}},
+            { id: 'complexity', trait: "Intellectual Complexity", score: 8.0, level: "HIGH", icon: "🧠", summary: "A deep thinker, curious, and open to new, complex ideas.", details: "Your brain is like a supercomputer that loves to solve puzzles. You enjoy digging into complex ideas, debating different viewpoints, and figuring out how things work. You're a natural strategist and thinker.", leverage: { title: "Engage Your Powerful Mind", points: ["Thrive in roles that involve strategy or R&D...","Start a blog or podcast...","Read widely outside your field...","Play devil's advocate..."]}, scale: { low: "A rather conservative and traditional tendency, avoiding debate and discussion, preferring a stable belief system.", medium: "Curious about new ideas but prefers to see a practical application. Enjoys learning but is not driven to constantly debate or experiment.", high: "A tendency to reflect on new concepts and ideas, with an attraction to experimentation and debate."}},
+            { id: 'friendliness', trait: "Friendliness", score: 5.0, level: "MEDIUM", icon: "😊", summary: "Balances social engagement with a comfortable, reserved side.", details: "You're a social chameleon. You can be the engaging center of a conversation or enjoy a quiet, meaningful chat with one person. You have the flexibility to be outgoing when needed but also value deeper, more reserved connections.", leverage: { title: "Master Your Social Energy", points: ["You are a social 'ambivert'...","Focus on genuine connection, not performance...","Schedule both social and alone time...","Adapt to any social situation..."]}, scale: { low: "Not necessarily hostile, but a more reserved and distant attitude in interpersonal relationships.", medium: "Enjoys social interaction and can build relationships easily, but also values personal space and doesn't need to be surrounded by people constantly.", high: "A love of people and of establishing deep, intimate relationships with others."}},
+            { id: 'liveliness', trait: "Liveliness", score: 5.75, level: "MEDIUM", icon: "🎉", summary: "Can be both spontaneous and expressive, or serious and thoughtful.", details: "You have an 'on/off' switch for energy, and you know how to use it! You can bring the fun, spontaneous energy to get a party started, but you also have a serious, thoughtful side that makes you a reliable and wise friend.", leverage: { title: "Leverage Your Versatility", points: ["Bring energy to kick-start projects...","Be both fun and trustworthy...","Be a great judge of character...","Use enthusiasm to motivate..."]}, scale: { low: "A tendency toward sobriety, prudence, seriousness, introspection, and pessimism.", medium: "A good mix of enthusiasm and caution. Can be cheerful and spontaneous but also knows when to be serious and prudent.", high: "Highly enthusiastic, spontaneous, expressive, cheerful, outspoken, and impulsive. Often chosen as leaders."}},
+            { id: 'perfectionism', trait: "Perfectionism", score: 7.25, level: "MEDIUM", icon: "📋", summary: "Organized and self-reliant in your approach to tasks.", details: "You're like a skilled builder. You value a solid plan and high-quality work, but you won't tear down the whole house because one nail is slightly crooked. You have high standards but are still practical enough to get the job done without getting stuck on minor flaws.", leverage: { title: "Capitalize on Your Orderliness", points: ["Take charge of project management...","Build a reputation for high-quality work...","Create efficient systems...","Know when 'good enough' is right..."]}, scale: { low: "More flexible and spontaneous. Less concerned with strict order and details, and comfortable with improvisation.", medium: "Appreciates order and planning but is not rigid. Can maintain high standards while remaining adaptable to unexpected changes.", high: "Highly organized, methodical, and precise. Values structure, planning, and has high standards for themselves and their work."}},
+            { id: 'curiosity', trait: "Intellectual Curiosity", score: 9.23, level: "HIGH", icon: "🧐", summary: "Possesses strong abstract thinking and loves acquiring new knowledge.", details: "You are an information sponge! You have a deep-seated need to learn and understand the world. You're always asking 'why?' and are not satisfied with simple answers. This drive, which is often associated with a high IQ, makes you incredibly knowledgeable and capable of deeply analyzing your surroundings.", leverage: { title: "Fuel Your Intellectual Curiosity", points: ["Never stop learning...","Become the expert in your field...","Ask 'why' constantly...","Translate complex topics for others..."]}, scale: { low: "Can indicate certain intellectual difficulties, with little interest in new knowledge and a poor capacity for abstraction.", medium: "Has a healthy interest in learning new things and can solve problems, but may not be driven to constantly analyze everything. A practical learner.", high: "Good abstract thinking and a strong interest in acquiring new knowledge. Capable of analyzing and understanding their surroundings."}},
+            { id: 'trust', trait: "Trust (Low Vigilance)", score: 5.0, level: "MEDIUM", icon: "🤝", summary: "A healthy, balanced level of trust in others.", details: "You have a well-calibrated 'people-dar.' You start from a place of trust, which helps you build strong relationships, but you're also wise enough to notice when something isn't right. You're open-hearted but not naive.", leverage: { title: "Build on a Foundation of Trust", points: ["Be excellent at building teams...","Delegate effectively...","Spot red flags without being cynical...","Form strategic partnerships..."]}, scale: { low: "A tendency to trust others, adapt easily, and care for peers. Open, tolerant, and non-competitive. (Low in 'Distrust')", medium: "A 'trust but verify' approach. Generally open to others but remains discerning and cautious until trust is earned. (Medium 'Distrust')", high: "A tendency toward distrust, suspicion, and skepticism. Interpersonal relationships can be problematic. (High in 'Distrust')"}},
+        ];
+
+        // --- Page Navigation & DOM Elements ---
+        const homePage = document.getElementById('home-page');
+        const detailPage = document.getElementById('detail-page');
+        const growthPage = document.getElementById('growth-page');
+        const navHomeBtn = document.getElementById('nav-home');
+        const navGrowthBtn = document.getElementById('nav-growth');
+        const allPages = document.querySelectorAll('.page');
+        const allNavButtons = document.querySelectorAll('.main-nav-right button');
+
+        function navigateTo(pageId, traitId = null) {
+            allPages.forEach(page => page.classList.remove('active'));
+            allNavButtons.forEach(btn => btn.classList.remove('active'));
+            
+            const dropdownContent = document.getElementById('nav-dropdown-content');
+            if (dropdownContent.classList.contains('show')) {
+                dropdownContent.classList.remove('show');
+            }
+
+            if (pageId === 'home') {
+                homePage.classList.add('active');
+                navHomeBtn.classList.add('active');
+            } else if (pageId === 'growth') {
+                growthPage.classList.add('active');
+                navGrowthBtn.classList.add('active');
+            } else if (pageId === 'detail' && traitId) {
+                renderDetailPage(traitId);
+                detailPage.classList.add('active');
+            }
+            window.scrollTo(0, 0);
+        }
+
+        // --- Detail Page Rendering ---
+        function renderDetailPage(traitId) {
+            const traitIndex = personalityData.findIndex(p => p.id === traitId);
+            if (traitIndex === -1) return; 
+
+            const trait = personalityData[traitIndex];
+            
+            const prevTraitIndex = (traitIndex - 1 + personalityData.length) % personalityData.length;
+            const nextTraitIndex = (traitIndex + 1) % personalityData.length;
+            const prevTraitId = personalityData[prevTraitIndex].id;
+            const nextTraitId = personalityData[nextTraitIndex].id;
+
+            const leveragePoints = trait.leverage.points.map(point => `<li><span class="li-icon">✨</span>${point}</li>`).join('');
+
+            detailPage.innerHTML = `
+                <header class="detail-header">
+                    <span class="detail-icon">${trait.icon}</span>
+                    <h1>${trait.trait}</h1>
+                    <div class="score-badge large-badge ${trait.level.toLowerCase()}">${trait.level} (${trait.score}/10)</div>
+                </header>
+                <section class="section">
+                    <h2>What This Means for You</h2><div class="glass-card text-card"><p>${trait.details}</p></div>
+                </section>
+                <section class="section">
+                    <h2>${trait.leverage.title}</h2><div class="glass-card text-card leverage-card"><ul>${leveragePoints}</ul></div>
+                </section>
+                <section class="section">
+                    <h2>Full Spectrum Analysis</h2>
+                    <div class="spectrum-container">
+                        <div class="glass-card spectrum-card low"><h3>Low Score Meaning</h3><p>${trait.scale.low}</p></div>
+                        <div class="glass-card spectrum-card medium"><h3>Medium Score Meaning</h3><p>${trait.scale.medium}</p></div>
+                        <div class="glass-card spectrum-card high"><h3>High Score Meaning</h3><p>${trait.scale.high}</p></div>
+                    </div>
+                </section>
+                <div class="page-navigation">
+                    <button class="nav-button" onclick="navigateTo('detail', '${prevTraitId}')">&larr; Previous Trait</button>
+                    <button class="nav-button" onclick="navigateTo('detail', '${nextTraitId}')">Next Trait &rarr;</button>
+                </div>
+            `;
+        }
+
+        // --- Homepage Rendering ---
+        function renderHomePage() {
+            const gridContainer = document.getElementById('personality-grid-container');
+            gridContainer.innerHTML = ''; 
+            personalityData.forEach(trait => {
+                const card = document.createElement('div');
+                card.className = `trait-card ${trait.level.toLowerCase()}`;
+                card.innerHTML = `<div class="icon">${trait.icon}</div><h4>${trait.trait}</h4><div class="score-badge">${trait.level} (${trait.score}/10)</div><p class="summary">${trait.summary}</p>`;
+                card.onclick = () => navigateTo('detail', trait.id);
+                gridContainer.appendChild(card);
+            });
+
+            new Chart(document.getElementById('overallScoreChart').getContext('2d'), {
+                type: 'doughnut', data: { datasets: [{ data: [6.27, 10 - 6.27], backgroundColor: ['#00ffc3', 'rgba(255, 255, 255, 0.1)'], borderColor: '#0d1117', borderWidth: 4, borderRadius: 5 }] }, options: { responsive: true, cutout: '80%', plugins: { tooltip: { enabled: false } } }
+            });
+
+            new Chart(document.getElementById('personalityRadarChart').getContext('2d'), {
+                type: 'radar', data: { labels: ['Assertiveness', 'Imagination', 'Stability', 'Warmth', 'Self-Sufficiency', 'Curiosity'], datasets: [{ label: 'Your Score', data: [8.75, 9.0, 5.75, 7.25, 7.0, 9.23], backgroundColor: 'rgba(0, 170, 255, 0.2)', borderColor: 'rgba(0, 255, 195, 1)', pointBackgroundColor: 'rgba(0, 255, 195, 1)' }] }, options: { scales: { r: { angleLines: { color: 'rgba(255, 255, 255, 0.2)' }, grid: { color: 'rgba(255, 255, 255, 0.2)' }, pointLabels: { color: '#c9d1d9' }, ticks: { color: '#c9d1d9', backdropColor: 'rgba(0,0,0,0)', stepSize: 2, min: 0, max: 10 } } }, plugins: { legend: { display: false } } }
+            });
+        }
+        
+        // --- Growth Page Logic ---
+        function renderGrowthPage() {
+            const traitSelector = document.getElementById('trait-selector');
+            traitSelector.innerHTML = ''; // Clear previous options
+            const standoutTraits = personalityData.filter(t => t.level === 'HIGH' || t.level === 'MEDIUM');
+            standoutTraits.forEach(trait => {
+                const option = document.createElement('option');
+                option.value = trait.trait;
+                option.textContent = `${trait.icon} ${trait.trait}`;
+                traitSelector.appendChild(option);
+            });
+        }
+        
+        async function getGrowthIdeasFromGemini() {
+            const traitSelector = document.getElementById('trait-selector');
+            const challengeInput = document.getElementById('challenge-input');
+            const resultsDiv = document.getElementById('growth-results');
+
+            const traitName = traitSelector.value;
+            const userChallenge = challengeInput.value;
+
+            if (!userChallenge.trim()) {
+                resultsDiv.innerHTML = `<p>Please describe your challenge or goal first.</p>`;
+                return;
+            }
+
+            resultsDiv.innerHTML = `<p>Generating your personalized growth plan... 🧠</p>`;
+            resultsDiv.classList.add('loading');
+
+            const prompt = `You are an expert personal development and career coach named 'Atlas'. You are speaking to your client, Anthony. Anthony wants to focus on his personality trait of: "${traitName}". He is facing the following challenge: "${userChallenge}". Your task is to generate 3 to 5 creative, actionable, and encouraging ideas that will help Anthony use his strength in "${traitName}" to tackle this specific challenge. Frame the response as if you are speaking directly to him. Be inspiring and practical. Format your response as a simple, unnumbered list, where each idea starts with a '*'. Do not include any other formatting, titles, or introductory sentences.`;
+            
+            try {
+                 const apiKey = ""; 
+                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                 const response = await fetch(apiUrl, {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                 });
+                 
+                 if (!response.ok) {
+                    throw new Error(`API Error: ${response.statusText}`);
+                 }
+                 
+                 const result = await response.json();
+                 
+                 const text = result.candidates[0].content.parts[0].text;
+                 const ideas = text.split('*').filter(idea => idea.trim() !== '');
+                 const formattedHtml = '<ul class="growth-results-list">' + ideas.map(idea => `<li><span class="li-icon">💡</span>${idea.trim()}</li>`).join('') + '</ul>';
+                 
+                 resultsDiv.innerHTML = formattedHtml;
+
+            } catch (error) {
+                console.error("Error fetching from Gemini API:", error);
+                resultsDiv.innerHTML = `<p>Sorry, there was an error generating your plan. Please check your connection and try again.</p>`;
+            } finally {
+                resultsDiv.classList.remove('loading');
+            }
+        }
+        
+        // --- Audio Logic ---
+        let leftOsc, rightOsc;
+        let isPlaying = false;
+        function setupBinauralBeats() {
+            const audioBtn = document.getElementById('audio-control');
+            const playIcon = document.getElementById('play-icon');
+            const pauseIcon = document.getElementById('pause-icon');
+
+            const baseFreq = 110; // A low, pleasant A2 note
+            const binauralFreq = 10; // 10Hz for Alpha wave (relaxed focus)
+            
+            audioBtn.addEventListener('click', async () => {
+                if (Tone.context.state !== 'running') {
+                    await Tone.start();
+                }
+
+                if (!isPlaying) {
+                    leftOsc = new Tone.Oscillator(baseFreq, "sine").toDestination();
+                    rightOsc = new Tone.Oscillator(baseFreq + binauralFreq, "sine").toDestination();
+                    
+                    const pannerLeft = new Tone.Panner(-1).toDestination();
+                    const pannerRight = new Tone.Panner(1).toDestination();
+                    
+                    leftOsc.connect(pannerLeft);
+                    rightOsc.connect(pannerRight);
+
+                    leftOsc.volume.value = -12; // Lower volume for comfort
+                    rightOsc.volume.value = -12;
+
+                    leftOsc.start();
+                    rightOsc.start();
+                    
+                    playIcon.style.display = 'none';
+                    pauseIcon.style.display = 'block';
+                    isPlaying = true;
+                } else {
+                    leftOsc.stop();
+                    rightOsc.stop();
+                    leftOsc.dispose();
+                    rightOsc.dispose();
+
+                    playIcon.style.display = 'block';
+                    pauseIcon.style.display = 'none';
+                    isPlaying = false;
+                }
+            });
+        }
+        
+        // --- Initial Setup & Navigation ---
+        function setupNavigation() {
+            const dropdownBtn = document.getElementById('nav-dropdown-btn');
+            const dropdownContent = document.getElementById('nav-dropdown-content');
+
+            dropdownContent.innerHTML = '';
+            personalityData.forEach(trait => {
+                const traitButton = document.createElement('button');
+                traitButton.innerHTML = `${trait.icon} ${trait.trait}`;
+                traitButton.onclick = () => navigateTo('detail', trait.id);
+                dropdownContent.appendChild(traitButton);
+            });
+
+            dropdownBtn.addEventListener('click', () => dropdownContent.classList.toggle('show'));
+
+            window.addEventListener('click', (event) => {
+                if (!event.target.matches('.dropdown-btn')) {
+                    if (dropdownContent.classList.contains('show')) {
+                        dropdownContent.classList.remove('show');
+                    }
+                }
+            });
+        }
+
+        function initializeApp() {
+            setupNavigation();
+            renderHomePage();
+            renderGrowthPage(); 
+            setupInteractiveBackground();
+            setupBinauralBeats();
+            document.getElementById('generate-growth-plan-btn').addEventListener('click', getGrowthIdeasFromGemini);
+            navigateTo('home'); 
+        }
+
+        function setupInteractiveBackground() {
+            particlesJS('particles-js', {
+              "particles": { "number": { "value": 80, "density": { "enable": true, "value_area": 800 }}, "color": { "value": "#ffffff" }, "shape": { "type": "circle" }, "opacity": { "value": 0.5, "random": false }, "size": { "value": 3, "random": true }, "line_linked": { "enable": true, "distance": 150, "color": "#ffffff", "opacity": 0.4, "width": 1}, "move": { "enable": true, "speed": 2, "direction": "none", "out_mode": "out" }},
+              "interactivity": { "detect_on": "canvas", "events": { "onhover": { "enable": true, "mode": "grab" }, "onclick": { "enable": true, "mode": "push" }, "resize": true }, "modes": { "grab": { "distance": 140, "line_linked": { "opacity": 1 } }, "push": { "particles_nb": 4 }}},
+              "retina_detect": true
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+    </script>
+</body>
+</html>
+
